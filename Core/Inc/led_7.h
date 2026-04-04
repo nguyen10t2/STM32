@@ -21,7 +21,7 @@ extern "C"
 #define DIG2 GPIO_PIN_8
 #define DIG_PORT GPIOB
 
-// Thời gian trễ giữa các bước hiển thị (tính bằng ms)
+// Mảng ánh xạ từ số (0-F) sang các chân LED tương ứng trên 7-segment
 extern const uint8_t digit_map[];
 
 /**
