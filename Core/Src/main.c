@@ -141,6 +141,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    // Bài 1
+    // display_splot(1, 100);
+
+    // Bài 2
+    // display_2digit(2, 5, 5);
+
+    // Bài 4
     if (command_ok)
     {
       uint8_t mode;
