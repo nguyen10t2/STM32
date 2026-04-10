@@ -130,8 +130,9 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t cur_mode = 0;
-  uint8_t step = 1;
+  // Variable Ex1
+  // uint8_t cur_mode = 0;
+  // uint8_t step = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
