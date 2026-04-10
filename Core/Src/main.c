@@ -57,7 +57,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t count = 25;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -129,9 +129,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM6_Init();
-  HAL_TIM_Base_Start_IT(&htim6);  // Start TIM6 timer interrupt
   /* USER CODE BEGIN 2 */
-
+  uint8_t cur_mode = 0;
+  uint8_t step = 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,10 +142,17 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     // Bài 1
-    // display_splot(1, 100);
+    // if (step <= 2) {
+    //   // display_splot(cur_mode + 1, 100);
+    //   step++;
+    // }
+    // else {
+    //   cur_mode = (cur_mode + 1) % 4;
+    //   step = 1;
+    // }
 
     // Bài 2
-    // display_2digit(2, 5, 5);
+    // display_2digit(count / 10, count % 10, 5);
 
     // Bài 4
     if (command_ok)
