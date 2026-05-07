@@ -18,14 +18,15 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "tim.h"
+#include "usart.h"
 #include "gpio.h"
+#include "string.h"
+#include "SH1106.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-#include "irda.h"
-#include "led_7.h"
 
 /* USER CODE END Includes */
 
@@ -37,16 +38,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define IR_CMD_NUM_1_A 0x01
-#define IR_CMD_NUM_2_A 0x02
-#define IR_CMD_NUM_3_A 0x03
-#define IR_CMD_NUM_4_A 0x04
-
-#define IR_CMD_NUM_1_B 0x45
-#define IR_CMD_NUM_2_B 0x46
-#define IR_CMD_NUM_3_B 0x47
-#define IR_CMD_NUM_4_B 0x44
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,45 +48,17 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t count = 25;
+uint16_t rx_data[100];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-static uint8_t ir_cmd_to_mode(uint8_t cmd);
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-#include "7_led.h"
-
-static uint8_t current_mode = 1;
-static uint8_t last_ir_cmd_byte = 0x00;
-
-static uint8_t ir_cmd_to_mode(uint8_t cmd)
-{
-  switch (cmd)
-  {
-    case IR_CMD_NUM_1_A:
-    case IR_CMD_NUM_1_B:
-      return 1;
-    case IR_CMD_NUM_2_A:
-    case IR_CMD_NUM_2_B:
-      return 2;
-    case IR_CMD_NUM_3_A:
-    case IR_CMD_NUM_3_B:
-      return 3;
-    case IR_CMD_NUM_4_A:
-    case IR_CMD_NUM_4_B:
-      return 4;
-    default:
-      return 0;
-  }
-}
 
 /* USER CODE END 0 */
 
@@ -128,11 +91,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_I2C3_Init();
+  MX_USART1_UART_Init();
   MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   // Variable Ex1
-  // uint8_t cur_mode = 0;
-  // uint8_t step = 1;
+
+  SH1106_Init();
+  Clock_Init();
+
+  const char buf[10] = "Hello\r\n";
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -142,36 +110,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // Bài 1
-    // if (step <= 2) {
-    //   // display_splot(cur_mode + 1, 100);
-    //   step++;
-    // }
-    // else {
-    //   cur_mode = (cur_mode + 1) % 4;
-    //   step = 1;
-    // }
-
-    // Bài 2
-    // display_2digit(count / 10, count % 10, 5);
-
-    // Bài 4
-    if (command_ok)
-    {
-      uint8_t mode;
-
-      IrDecode();
-      last_ir_cmd_byte = irda_cmd[2];
-      mode = ir_cmd_to_mode(irda_cmd[2]);
-      if (mode != 0)
-      {
-        current_mode = mode;
-      }
-      command_ok = 0;
-    }
-
-    display_hex_byte(last_ir_cmd_byte, 1);
-    display_splot_step(current_mode, 40);
+    HAL_UART_Transmit(&huart1, (uint8_t *)buf, strlen(buf), 2);
+    Clock_Task();
+    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
@@ -220,7 +161,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
