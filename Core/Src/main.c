@@ -19,14 +19,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "string.h"
-#include "SH1106.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include <stdio.h>
+#include <string.h>
+#include "task.h"
+#include "ds1307.h"
+#include "SH1106.h"
+#include "tm_stm32f4_mfrc522.h"
 
 /* USER CODE END Includes */
 
@@ -48,13 +54,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t rx_data[100];
+char rx_buf[100];
+uint8_t rx_idx = 0;
+uint8_t rx_data;
+
+// Flag flags
+volatile uint8_t cmd_received = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+uint8_t hex2int(char c);
+void ProcessCommand(char* cmd);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -94,25 +106,60 @@ int main(void)
   MX_I2C3_Init();
   MX_USART1_UART_Init();
   MX_TIM6_Init();
+  MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
-  // Variable Ex1
+  Task_Init();
 
-  SH1106_Init();
-  Clock_Init();
-
-  const char buf[10] = "Hello\r\n";
+  // Start UART Receive Interrupt
+  HAL_UART_Receive_IT(&huart1, &rx_data, 1);
   /* USER CODE END 2 */
+
+  // SH1106_Init();
+  // DS1307_Init();
+  // TM_MFRC522_Init();
+
+  // char buffer[30];
+  // uint8_t cardId[5];
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // HAL_Delay(200);
+    Task_Run();
+    // GetTime(&getTime);
+    // sprintf(buffer, "20%02d/%02d/%02d %02d:%02d:%02d\r\n", getTime.year, getTime.month, getTime.date, getTime.hour, getTime.min, getTime.sec);
+    // sprintf(buffer, "20%02d/%02d/%02d ", getTime.year, getTime.month, getTime.date);
+    // HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), 1000);
+
+    // SH1106_GotoXY(5, 0);
+    // SH1106_Puts(buffer, &Font_11x18, 1);
+
+    // sprintf(buffer, "%02d:%02d:%02d", getTime.hour, getTime.min, getTime.sec);
+    // SH1106_GotoXY(5, 20);
+    // SH1106_Puts(buffer, &Font_11x18, 1);
+
+    // SH1106_UpdateScreen();
+    // HAL_Delay(1000);
+
+    HAL_Delay(200);
+    // HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13 | GPIO_PIN_14, GPIO_PIN_RESET);
+    // if (TM_MFRC522_Check(cardId) == MI_OK) {
+    //   sprintf(buffer, "%x%x%x%x%x", cardId[0], cardId[1], cardId[2], cardId[3], cardId[4]);
+    //   HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET);
+    // }
+    // else {
+    //   sprintf(buffer, "----------");
+    //   HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, GPIO_PIN_SET);
+    // }
+
+    // HAL_UART_Transmit(&huart1, (uint8_t*)buffer, strlen(buffer), 1000);
+    // SH1106_GotoXY(12, 10);
+    // SH1106_Puts(buffer, &Font_11x18, 1);
+    // SH1106_UpdateScreen();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Transmit(&huart1, (uint8_t *)buf, strlen(buf), 2);
-    Clock_Task();
-    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
@@ -161,7 +208,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
@@ -170,6 +217,27 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1)
+    {
+    if (!cmd_received)
+    {
+      if (rx_data == '\r' || rx_data == '\n')
+      {
+        rx_buf[rx_idx] = '\0';
+        cmd_received = 1;
+      }
+      else if (rx_idx < sizeof(rx_buf) - 1)
+      {
+        rx_buf[rx_idx++] = rx_data;
+      }
+    }
+
+      HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+    }
+}
 
 /* USER CODE END 4 */
 
