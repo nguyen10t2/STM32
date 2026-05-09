@@ -19,14 +19,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "spi.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "string.h"
-#include "SH1106.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include <stdio.h>
+#include <string.h>
+#include "task.h"
+#include "ds1307.h"
+#include "SH1106.h"
+#include "tm_stm32f4_mfrc522.h"
 
 /* USER CODE END Includes */
 
@@ -48,13 +54,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint16_t rx_data[100];
+char rx_buf[100];
+uint8_t rx_idx = 0;
+uint8_t rx_data;
+
+// Flag flags
+volatile uint8_t cmd_received = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+uint8_t hex2int(char c);
+void ProcessCommand(char* cmd);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -94,25 +106,36 @@ int main(void)
   MX_I2C3_Init();
   MX_USART1_UART_Init();
   MX_TIM6_Init();
+  MX_SPI4_Init();
   /* USER CODE BEGIN 2 */
-  // Variable Ex1
+  Task_Init();
 
-  SH1106_Init();
-  Clock_Init();
-
-  const char buf[10] = "Hello\r\n";
+  // Start UART Receive Interrupt
+  HAL_UART_Receive_IT(&huart1, &rx_data, 1);
   /* USER CODE END 2 */
+  DS1307_Init();
+  SH1106_Init();
+  TM_MFRC522_Init();
+
+  char buffer[30];
+  // DS1307_TimeTypeDef setTime = { .sec = 10, .min = 15, .hour = 14, .day = 7, .month = 5, .year = 26, .date = 9};
+  // DS1307_TimeTypeDef getTime;
+  // SetTime(&setTime);
+
+  uint8_t cardId[5];
+  sprintf(buffer, "Hello");
+  SH1106_GotoXY(12, 10);
+  SH1106_Puts(buffer, &Font_11x18, 1);
+  SH1106_UpdateScreen();
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    Task_Run();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Transmit(&huart1, (uint8_t *)buf, strlen(buf), 2);
-    Clock_Task();
-    HAL_Delay(500);
   }
   /* USER CODE END 3 */
 }
@@ -161,7 +184,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
@@ -170,6 +193,57 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+uint8_t hex2int(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return 0;
+}
+
+void ProcessCommand(char* cmd)
+{
+    char debug_buf[100];
+    
+    if (strncmp(cmd, "ADD:", 4) == 0) {
+        uint8_t card[5];
+        for (int i = 0; i < 5; i++) {
+            card[i] = (hex2int(cmd[4 + i*2]) << 4) | hex2int(cmd[5 + i*2]);
+        }
+        
+        sprintf(debug_buf, "Card added successfully\r\n");
+        HAL_UART_Transmit(&huart1, (uint8_t*)debug_buf, strlen(debug_buf), 100);
+    }
+    else if (strncmp(cmd, "READ", 4) == 0) {
+        sprintf(debug_buf, "Read command received\r\n");
+        HAL_UART_Transmit(&huart1, (uint8_t*)debug_buf, strlen(debug_buf), 100);
+    }
+    else {
+        sprintf(debug_buf, "Unknown command\r\n");
+        HAL_UART_Transmit(&huart1, (uint8_t*)debug_buf, strlen(debug_buf), 100);
+    }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance == USART1) {
+        if (rx_data == '\r' || rx_data == '\n') {
+            if (rx_idx > 0) {
+                rx_buf[rx_idx] = '\0';
+                cmd_received = 1;
+            }
+            rx_idx = 0;
+        } else if (rx_idx < 99) {
+            rx_buf[rx_idx++] = rx_data;
+        }
+        
+        HAL_UART_Receive_IT(&huart1, &rx_data, 1);
+    }
+}
 
 /* USER CODE END 4 */
 
