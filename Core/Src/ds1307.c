@@ -1,6 +1,7 @@
 #include "ds1307.h"
 #include "i2c.h"
 #include <stdio.h>
+#include <string.h>
 
 // Địa chỉ I2C của DS1307 (dịch trái 1 bit cho thư viện HAL: 0x68 << 1)
 #define DS1307_I2C_ADDR 0xD0
