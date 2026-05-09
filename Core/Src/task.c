@@ -247,10 +247,7 @@ void Task_Run(void)
                 Log_Data(CardID, 5);
             } else {
                 sprintf(buf, "%s", reject);
-<<<<<<< HEAD
                 sprintf(id_buf, "ID: %02X%02X%02X%02X%02X\r\n", CardID[0], CardID[1], CardID[2], CardID[3], CardID[4]);
-=======
->>>>>>> fe7fb42369c3da619d0bfba9002f652ef44d8b98
                 HAL_GPIO_WritePin(GPIOG, GPIO_PIN_14, GPIO_PIN_RESET);
             }
             SH1106_GotoXY(12, 10);
