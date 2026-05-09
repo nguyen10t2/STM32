@@ -113,6 +113,20 @@ int main(void)
   // Start UART Receive Interrupt
   HAL_UART_Receive_IT(&huart1, &rx_data, 1);
   /* USER CODE END 2 */
+  DS1307_Init();
+  SH1106_Init();
+  TM_MFRC522_Init();
+
+  char buffer[30];
+  // DS1307_TimeTypeDef setTime = { .sec = 10, .min = 15, .hour = 14, .day = 7, .month = 5, .year = 26, .date = 9};
+  // DS1307_TimeTypeDef getTime;
+  // SetTime(&setTime);
+
+  uint8_t cardId[5];
+  sprintf(buffer, "Hello");
+  SH1106_GotoXY(12, 10);
+  SH1106_Puts(buffer, &Font_11x18, 1);
+  SH1106_UpdateScreen();
 
   // SH1106_Init();
   // DS1307_Init();
