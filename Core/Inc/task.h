@@ -20,6 +20,9 @@ void Send_UART(uint8_t* data, uint16_t size);
 // Lưu log trên RAM tối đa MAX_LOG_SIZE
 void Log_Data(uint8_t* data, uint16_t size);
 
+// In ra 5 log gần nhất
+void Print_Last_Five_Logs(void);
+
 void Task_Run(void);
 
 #endif /* __TASK_H */

@@ -149,6 +149,11 @@ void ProcessCommand(char* cmd)
         return;
     }
 
+    if (strncmp(cmd, "LOG", 3) == 0) {
+        Print_Last_Five_Logs();
+        return;
+    }
+
     if (strcmp(cmd, "LIST") == 0) {
         sprintf(response, "COUNT %u\r\n", valid_cards_count);
         Send_UART((uint8_t*)response, strlen(response));
@@ -216,6 +221,19 @@ static uint8_t CheckValidCard(uint8_t* card_id) {
         }
     }
     return 0;
+}
+
+void Print_Last_Five_Logs(void) {
+    char log_buf[100];
+    uint16_t start = (log_count > 5) ? (log_count - 5) : 0;
+
+    for (uint16_t i = start; i < log_count; i++) {
+        LogRecord* record = &access_logs[i];
+        sprintf(log_buf, "Time: %02u/%02u/20%02u %02u:%02u:%02u - ID: %02X%02X%02X%02X%02X\r\n",
+                record->date, record->month, record->year, record->hours, record->minutes, record->seconds,
+                record->card_id[0], record->card_id[1], record->card_id[2], record->card_id[3], record->card_id[4]);
+        Send_UART((uint8_t*)log_buf, strlen(log_buf));
+    }
 }
 
 void Task_Run(void)
